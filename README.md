@@ -55,3 +55,14 @@ Project Organization
 --------
 
 <p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. #cookiecutterdatascience</small></p>
+
+
+dvc commands
+```bash
+pip install dvc
+dvc init
+dvc remote add myremote https://mlopsdatasets.blob.core.windows.net/winequality-data
+git add .dvc/config && git commit -m "Configure remote storage"
+dvc remote default myremote
+dvc push
+```
