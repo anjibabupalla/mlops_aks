@@ -4,12 +4,12 @@ from flask.wrappers import Response
 import yaml
 import joblib
 import numpy as np
-from prediction_service import prediction
+from src.models.predict_model import prediction
 
 webapp_root = "webapp"
 static_dir = os.path.join(webapp_root, "static")
 template_dir = os.path.join(webapp_root, "templates")
-from src.get_data import read_params
+from src.data.make_dataset import read_params
 
 app = Flask(__name__, static_folder=static_dir, template_folder=template_dir)
 
