@@ -4,7 +4,7 @@ from flask.wrappers import Response
 import yaml
 import joblib
 import numpy as np
-from src.models.predict_model import prediction
+from src.models.predict_model import predict, form_response, api_response
 
 webapp_root = "webapp"
 static_dir = os.path.join(webapp_root, "static")
@@ -19,10 +19,10 @@ def index():
         try:
             if request.form:
                 data_req = dict(request.form)                
-                response = prediction.form_response(data_req)
+                response = form_response(data_req)
                 return render_template('index.html',response=response)
             elif request.json:
-                response = prediction.api_response(request.json)
+                response = api_response(request.json)
                 return jsonify(response)
         except Exception as e:
             print(e)
