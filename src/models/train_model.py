@@ -1,44 +1,60 @@
 import os
+from  src.data.make_dataset import read_params
+import numpy as np
+from sklearn.metrics import mean_squared_error,mean_absolute_error,r2_score
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import ElasticNet
+from urllib.parse import urlparse
 import argparse
-import yaml
-import logging
+import joblib
+import json
 import pandas as pd
-import glob
 
-def read_all_csv(path):
-    all_files = glob.glob(path + "/*.csv")
-    list_of_dfs = []
-    for filename in all_files:
-        df = pd.read_csv(filename, index_col=None, header=0,sep=',')
-        list_of_dfs.append(df)
-    return pd.concat(list_of_dfs, axis=0, ignore_index=True)
-
-def read_params(config_path):
-    with open(config_path) as yaml_file:
-        config = yaml.safe_load(yaml_file)
-    return config
-
-
-def load_and_save(config_path):   
+def eval_metrics(actual,prediction):
+    rmse = np.sqrt(mean_squared_error(actual, prediction))
+    mae = mean_absolute_error(actual, prediction)
+    r2 = r2_score(actual, prediction)
+    return rmse,mae,r2
+def train_and_evaluate(config_path):
+    
     config = read_params(config_path)
-    df = get_data(config_path)
-    df.columns = [cols.replace(' ','_') for cols in df.columns]
-    write_path = config['load_data']['raw_data_set']
-    df.to_csv(write_path,sep=',',index=False,header=True)
+    test_data_path = config['split_data']['test_path']
+    train_data_path = config['split_data']['train_path']
+    random_state = config['base']['random_state']
+    model_dir = config['saved_models']['model_dir']
+    alpha = config['estimators']['ElasticNet']['params']['alpha']
+    l1_ratio = config['estimators']['ElasticNet']['params']['l1_ratio']
+    target = config['base']['target_col'] 
+    
+
+    train = pd.read_csv(train_data_path,sep=',')
+    test = pd.read_csv(test_data_path,sep=',')
+
+    train_y = train[target]
+    test_y = test[target]
+    train_x = train.drop(target,axis=1)
+    test_x = test.drop(target,axis=1)
+    
+
+    lr = ElasticNet(alpha=alpha,l1_ratio=l1_ratio,random_state=random_state)
+    lr.fit(train_x,train_y)
+    predicted_qualities = lr.predict(test_x)
+    (rmse,mae,r2) = eval_metrics(test_y,predicted_qualities)
+    print("Elasticnet model (alpha=%f, l1_ratio=%f):" % (alpha, l1_ratio))
+    print("  RMSE: %s" % rmse)
+    print("  MAE: %s" % mae)
+    print("  R2: %s" % r2)
 
 
-def get_data(config_path):
-    config = read_params(config_path)
-    print('displaying config values',config)
-    data_path = config['data_source']['batch_files']
-    df = pd.read_csv(data_path)
-    print(df.columns)
-    return df
 
 
+    os.makedirs(model_dir, exist_ok=True)
+    model_path = os.path.join(model_dir, "model.joblib")
 
-if __name__=="__main__":
-    parser =  argparse.ArgumentParser()
-    parser.add_argument('--config',default='config/params.yaml')
-    args = parser.parse_args()
-    load_and_save(config_path=args.config)
+    joblib.dump(lr, model_path)
+
+
+if __name__ == '__main__':
+    args = argparse.ArgumentParser()
+    default_config_path = os.path.join('config','params.yaml')
+    train_and_evaluate(default_config_path)

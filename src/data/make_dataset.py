@@ -1,30 +1,41 @@
-# -*- coding: utf-8 -*-
-import click
+import os
+import argparse
+import yaml
 import logging
-from pathlib import Path
-from dotenv import find_dotenv, load_dotenv
+import pandas as pd
+import glob
+
+def read_all_csv(path):
+    all_files = glob.glob(path + "/*.csv")
+    list_of_dfs = []
+    for filename in all_files:
+        df = pd.read_csv(filename, index_col=None, header=0,sep=',')
+        list_of_dfs.append(df)
+    return pd.concat(list_of_dfs, axis=0, ignore_index=True)
+
+def read_params(config_path):
+    with open(config_path) as yaml_file:
+        config = yaml.safe_load(yaml_file)
+    return config
+
+def load_and_save(config_path):   
+    config = read_params(config_path)
+    df = get_data(config_path)
+    df.columns = [cols.replace(' ','_') for cols in df.columns]
+    write_path = config['load_data']['processed_data_set']
+    df.to_csv(write_path,sep=',',index=False,header=True)
+
+def get_data(config_path):
+    config = read_params(config_path)
+    print('displaying config values',config)
+    data_path = config['data_source']['raw_data_set']
+    df = pd.read_csv(data_path)
+    print(df.columns)
+    return df
 
 
-@click.command()
-@click.argument('input_filepath', type=click.Path(exists=True))
-@click.argument('output_filepath', type=click.Path())
-def main(input_filepath, output_filepath):
-    """ Runs data processing scripts to turn raw data from (../raw) into
-        cleaned data ready to be analyzed (saved in ../processed).
-    """
-    logger = logging.getLogger(__name__)
-    logger.info('making final data set from raw data')
-
-
-if __name__ == '__main__':
-    log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    logging.basicConfig(level=logging.INFO, format=log_fmt)
-
-    # not used in this stub but often useful for finding various files
-    project_dir = Path(__file__).resolve().parents[2]
-
-    # find .env automagically by walking up directories until it's found, then
-    # load up the .env entries as environment variables
-    load_dotenv(find_dotenv())
-
-    main()
+if __name__=="__main__":
+    parser =  argparse.ArgumentParser()
+    parser.add_argument('--config',default='config/params.yaml')
+    args = parser.parse_args()
+    load_and_save(config_path=args.config)
