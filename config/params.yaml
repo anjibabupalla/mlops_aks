@@ -1,0 +1,10 @@
+base:
+  project: Wafer-Quality-Project
+  random_state: 42
+  target_col: TARGET
+
+data_source:
+  batch_files: data_given/winequality.csv
+
+load_data:
+  raw_data_set:  data/raw/winequality.csv
