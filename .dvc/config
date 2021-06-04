@@ -1,4 +1,0 @@
-[core]
-    remote = myremote
-['remote "myremote"']
-    url = https://mlopsdatasets.blob.core.windows.net/winequality-data
